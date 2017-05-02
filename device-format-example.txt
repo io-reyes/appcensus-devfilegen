@@ -1,0 +1,41 @@
+# DeviceFormat File 1.0
+#
+# GENERAL INSTRUCTIONS
+# Every row starts with its name followed directly by a colon then a space. No names contain spaces.
+# # Names spelled exactly the same as in schema document in Google Sheets. All fields included in example below.
+# Every entry can be a list.
+# Every list is commma delimited w/ no spaces.
+# Write all IDs in lowercase letters.
+# Write all mac addresses with colons
+# Write all aaids with hyphens
+# Lines beginning with # are ignored
+# No empty lines
+# If no information for fields, either do not use them at all or leave the space blank. This example leaves them blank.
+#
+# SPECIFIC INSTRUCTIONS
+# testerName is the name of the person who conducted the test
+# Write phone numbers with no spaces or deilimiters, such as 1234567891. If you need country code, just append to front.
+# For platform build fingerprint, only put unique name and number like "ioreye11300945".
+# Locations are comma-separated coords in the order lat then lon. Can put multiple - they are grouped in pairs.
+# Avoid using commas (actually dont at all) in names and such
+# 
+#
+# EXAMPLE - this file itself could be a device file:
+testerName: John Test
+phone:
+email: icsisensors@gmail.com
+name: IOR Blues
+imei: 357478061454986
+wifimac: c4:9a:02:84:fc:38,02:00:00:00:00:00
+aaid: f175da20-71fb-46a9-99a4-19d918fb5967,ea00cbdf-2cf0-487c-b5e2-706104caef48
+gsfid: 353EDD229661B40F
+androidid: 804608AEC9153C7F
+hwid: 0e742a00037c8002
+simid:
+fingerprint: ioreye11300945
+geolatlon:
+routermac: 38:1c:1a:c4:ba:b0,ae:22:0b:8d:40:aa,48:5d:36:a3:d0:9a,2c:30:33:bd:34:53,94:62:69:70:50:c0,54:65:de:33:54:00,58:93:96:02:99:98
+routerssid: ICSI,IOR_guest_nomap,FiOS-LLKDU-5G,NETGEAR09,ATT4z75826,Leos,Redlion_Guest
+photo:
+video:
+audio:
