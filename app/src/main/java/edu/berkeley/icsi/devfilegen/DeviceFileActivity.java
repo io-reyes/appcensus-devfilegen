@@ -9,6 +9,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,7 +21,12 @@ import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +49,8 @@ public class DeviceFileActivity extends AppCompatActivity {
     public static final String GEO = "geolocation";
     public static final String ROUTER_NAMES = "routerssid";
     public static final String ROUTER_MACS = "routermac";
+
+    public static final String FILE_NAME = "parser-device-file.txt";
 
     private static Map<String, String> infoMap = null;
 
@@ -153,24 +161,20 @@ public class DeviceFileActivity extends AppCompatActivity {
 
             // Wi-fi router SSIDs and MACs
             String ssids = null;
-            String macs = null;
             WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             List<WifiConfiguration> routers = wifiManager.getConfiguredNetworks();
             if(routers != null) {
                 for(WifiConfiguration config : wifiManager.getConfiguredNetworks()) {
+                    String thisSSID = config.SSID.replaceAll("^\"|\"$", "");
                     if(ssids == null) {
-                        ssids = config.SSID;
+                        ssids = thisSSID;
                     } else {
-                        ssids += "," + config.SSID;
-                    }
-
-                    if(macs == null) {
-                        macs = config.BSSID;
-                    } else {
-                        macs += "," + config.BSSID;
+                        ssids += "," + thisSSID;
                     }
                 }
             }
+            // TODO Find a way to get MACs of configured networks, not just the current one
+            String macs = wifiManager.getConnectionInfo().getBSSID();
             updateInfo(ROUTER_NAMES, ssids);
             updateInfo(ROUTER_MACS, macs);
         }
@@ -245,6 +249,27 @@ public class DeviceFileActivity extends AppCompatActivity {
             for(String label : info.keySet()) {
                 Log.i(label, info.get(label));
             }
+            writeInfo(info);
+        }
+    }
+
+    private void writeInfo(Map<String, String> info) {
+        File outFile = new File(Environment.getExternalStorageDirectory(), FILE_NAME);
+
+        try {
+            FileWriter fw = new FileWriter(outFile);
+            BufferedWriter bw = new BufferedWriter(fw);
+
+            for(String label : info.keySet()) {
+                bw.write(String.format("%s: %s\n", label, info.get(label)));
+            }
+
+            bw.close();
+            fw.close();
+
+            Log.i("DeviceInfo", "Successfully wrote to " + outFile.getAbsolutePath());
+        } catch(IOException e) {
+
         }
     }
 }
