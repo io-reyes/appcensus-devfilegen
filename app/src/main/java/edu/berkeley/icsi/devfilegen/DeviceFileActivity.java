@@ -229,8 +229,6 @@ public class DeviceFileActivity extends AppCompatActivity {
             adInfo = null;
                 try {
                     adInfo = AdvertisingIdClient.getAdvertisingIdInfo(DeviceFileActivity.this.getApplicationContext());
-                    if (adInfo.isLimitAdTrackingEnabled()) // check if user has opted out of tracking
-                        return "did not found GAID... sorry";
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (GooglePlayServicesNotAvailableException e) {
