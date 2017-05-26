@@ -1,15 +1,21 @@
 package edu.berkeley.icsi.devfilegen;
 
+import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.database.Cursor;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Looper;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,15 +29,15 @@ import com.google.android.gms.common.GooglePlayServicesRepairableException;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 public class DeviceFileActivity extends AppCompatActivity {
@@ -43,14 +49,13 @@ public class DeviceFileActivity extends AppCompatActivity {
     public static final String WIFI = "wifimac";
     public static final String AAID = "aaid";
     public static final String GSF = "gsfid";
-    public static final String ANDROID = "hwid";
+    public static final String ANDROID = "androidid";
+    public static final String HWID = "hwid";
     public static final String SIM = "simid";
     public static final String BUILD = "fingerprint";
     public static final String GEO = "geolocation";
     public static final String ROUTER_NAMES = "routerssid";
     public static final String ROUTER_MACS = "routermac";
-
-    public static final String FILE_NAME = "parser-device-file.txt";
 
     private static Map<String, String> infoMap = null;
 
@@ -147,6 +152,10 @@ public class DeviceFileActivity extends AppCompatActivity {
             String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
             updateInfo(ANDROID, androidId);
 
+            // HW ID
+            String hwId = Build.SERIAL;
+            updateInfo(HWID, hwId);
+
             // SIM ID
             String simId = tm.getSimSerialNumber();
             updateInfo(SIM, simId);
@@ -156,25 +165,51 @@ public class DeviceFileActivity extends AppCompatActivity {
             updateInfo(BUILD, buildFingerprint);
 
             // Location
-            // TODO
-            updateInfo(GEO, null);
+            Location loc = getLocation();
+            updateInfo(GEO, loc.getLatitude() + "," + loc.getLongitude());
 
             // Wi-fi router SSIDs and MACs
-            String ssids = null;
+            Set<String> routerNames = new TreeSet<>();
+            Set<String> routerMacs = new TreeSet<>();
+
             WifiManager wifiManager = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            List<WifiConfiguration> routers = wifiManager.getConfiguredNetworks();
-            if(routers != null) {
-                for(WifiConfiguration config : wifiManager.getConfiguredNetworks()) {
-                    String thisSSID = config.SSID.replaceAll("^\"|\"$", "");
-                    if(ssids == null) {
-                        ssids = thisSSID;
-                    } else {
-                        ssids += "," + thisSSID;
-                    }
+            for(WifiConfiguration config : wifiManager.getConfiguredNetworks()) {
+                routerNames.add(config.SSID);
+                //routerMacs.add(config.BSSID);     // Always returns "any"
+            }
+
+            routerNames.add(wifiManager.getConnectionInfo().getSSID());
+            routerMacs.add(wifiManager.getConnectionInfo().getBSSID());
+
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+            for(ScanResult res : wifiManager.getScanResults()) {
+                if(res.SSID.length() > 0) {
+                    routerNames.add(res.SSID);
+                }
+
+                if(res.BSSID.length() == (6 * 2) + 5) {
+                    routerMacs.add(res.BSSID);
                 }
             }
-            // TODO Find a way to get MACs of configured networks, not just the current one
-            String macs = wifiManager.getConnectionInfo().getBSSID();
+
+            String ssids = null;
+            for(String s : routerNames) {
+                if(ssids == null) {
+                    ssids = s;
+                } else {
+                    ssids += "," + s;
+                }
+            }
+
+            String macs = null;
+            for(String s: routerMacs) {
+                if(macs == null) {
+                    macs = s;
+                } else {
+                    macs += "," + s;
+                }
+            }
+
             updateInfo(ROUTER_NAMES, ssids);
             updateInfo(ROUTER_MACS, macs);
         }
@@ -252,7 +287,7 @@ public class DeviceFileActivity extends AppCompatActivity {
     }
 
     private void writeInfo(Map<String, String> info) {
-        File outFile = new File(Environment.getExternalStorageDirectory(), FILE_NAME);
+        File outFile = new File(Environment.getExternalStorageDirectory(), Build.SERIAL + ".device");
 
         try {
             FileWriter fw = new FileWriter(outFile);
@@ -269,5 +304,53 @@ public class DeviceFileActivity extends AppCompatActivity {
         } catch(IOException e) {
 
         }
+    }
+    private Location getLocation() {
+        final Location loc = new Location(LocationManager.NETWORK_PROVIDER);
+        loc.setLatitude(Double.NaN);
+        loc.setLongitude(Double.NaN);
+
+        final LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        Location last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if(last == null) {
+            final LocationListener ll = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    loc.setLatitude(location.getLatitude());
+                    loc.setLongitude(location.getLongitude());
+                    Log.i("DeviceInfo", loc.getLatitude() + "," + loc.getLongitude());
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            };
+
+            Looper ml = Looper.myLooper();
+            lm.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, ll, ml);
+
+            while(Double.isNaN(loc.getLatitude()) || Double.isNaN(loc.getLongitude())) {
+
+            }
+
+            lm.removeUpdates(ll);
+        } else {
+            loc.set(last);
+        }
+
+        return loc;
     }
 }
