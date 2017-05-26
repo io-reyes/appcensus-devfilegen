@@ -302,9 +302,10 @@ public class DeviceFileActivity extends AppCompatActivity {
 
             Log.i("DeviceInfo", "Successfully wrote to " + outFile.getAbsolutePath());
         } catch(IOException e) {
-
+            Log.e("DeviceInfo", e.getMessage());
         }
     }
+
     private Location getLocation() {
         final Location loc = new Location(LocationManager.NETWORK_PROVIDER);
         loc.setLatitude(Double.NaN);
