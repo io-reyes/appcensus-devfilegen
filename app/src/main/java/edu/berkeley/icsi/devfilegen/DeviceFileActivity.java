@@ -53,7 +53,7 @@ public class DeviceFileActivity extends AppCompatActivity {
     public static final String HWID = "hwid";
     public static final String SIM = "simid";
     public static final String BUILD = "fingerprint";
-    public static final String GEO = "geolocation";
+    public static final String GEO = "geolatlon";
     public static final String ROUTER_NAMES = "routerssid";
     public static final String ROUTER_MACS = "routermac";
 
