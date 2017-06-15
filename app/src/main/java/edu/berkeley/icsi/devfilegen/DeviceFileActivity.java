@@ -125,12 +125,9 @@ public class DeviceFileActivity extends AppCompatActivity {
             updateInfo(IMEI, imei);
 
             // Wi-Fi MAC
-            final String DUMMY_WIFI = "02:00:00:00:00:00";  // Dummy address from Android M
             String wifiMac = getWifiMacAddress();
             if (!wifiMac.isEmpty()) {
-                updateInfo(WIFI, wifiMac + "," + DUMMY_WIFI);
-            } else {
-                updateInfo(WIFI, DUMMY_WIFI);
+                updateInfo(WIFI, wifiMac);
             }
 
             // AAID
